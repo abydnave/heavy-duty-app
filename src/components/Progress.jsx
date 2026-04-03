@@ -120,6 +120,83 @@ export default function Progress({ onRefresh }) {
     return { label: nextDay?.label || nextDayId, dateStr, dayId: nextDayId, isToday: diffDays <= 0 }
   }, [workouts])
 
+  // Build set of workout dates (YYYY-MM-DD strings) for heatmap
+  const workoutDates = useMemo(() => {
+    const dates = new Set()
+    for (const w of workouts) {
+      const d = new Date(w.created_at)
+      dates.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`)
+    }
+    return dates
+  }, [workouts])
+
+  // Build heatmap grid: last 13 weeks (91 days)
+  const heatmapData = useMemo(() => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    // Find the Monday of the current week
+    const dayOfWeek = today.getDay() // 0=Sun, 1=Mon, ...
+    const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+    const thisMonday = new Date(today)
+    thisMonday.setDate(today.getDate() - mondayOffset)
+
+    // Go back 12 more weeks (13 weeks total)
+    const startMonday = new Date(thisMonday)
+    startMonday.setDate(thisMonday.getDate() - 12 * 7)
+
+    const weeks = []
+    const months = []
+    let lastMonth = -1
+
+    for (let w = 0; w < 13; w++) {
+      const week = []
+      for (let d = 0; d < 7; d++) {
+        const date = new Date(startMonday)
+        date.setDate(startMonday.getDate() + w * 7 + d)
+        const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+        const isFuture = date > today
+        week.push({ date, dateStr, hasWorkout: workoutDates.has(dateStr), isFuture })
+
+        // Track month labels
+        if (d === 0 && date.getMonth() !== lastMonth) {
+          months.push({ weekIdx: w, label: date.toLocaleDateString('en-US', { month: 'short' }) })
+          lastMonth = date.getMonth()
+        }
+      }
+      weeks.push(week)
+    }
+
+    return { weeks, months }
+  }, [workoutDates])
+
+  // Compute week streak (consecutive weeks with at least 1 workout)
+  const weekStreak = useMemo(() => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const dayOfWeek = today.getDay()
+    const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+
+    let streak = 0
+    // Check each week going backwards
+    for (let w = 0; w < 52; w++) {
+      const weekStart = new Date(today)
+      weekStart.setDate(today.getDate() - mondayOffset - w * 7)
+      let hasWorkout = false
+
+      for (let d = 0; d < 7; d++) {
+        const date = new Date(weekStart)
+        date.setDate(weekStart.getDate() + d)
+        const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+        if (workoutDates.has(dateStr)) { hasWorkout = true; break }
+      }
+
+      if (hasWorkout) streak++
+      else break
+    }
+    return streak
+  }, [workoutDates])
+
   async function handleDelete(id) {
     await deleteWorkout(id)
     setWorkouts(prev => prev.filter(w => w.id !== id))
@@ -145,6 +222,75 @@ export default function Progress({ onRefresh }) {
         <p className={`text-xs mt-1 font-semibold ${nextWorkout.isToday ? 'text-green-400' : 'text-amber-500'}`}>
           {nextWorkout.isToday ? '🔥 ' : ''}{nextWorkout.dateStr}
         </p>
+      </div>
+
+      {/* Week Streak + Heatmap */}
+      <div className="rounded-xl p-4" style={{ background: '#151a25' }}>
+        {/* Streak */}
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-2xl">🔥</span>
+          <div>
+            <span className="text-xl font-extrabold text-white">{weekStreak}</span>
+            <span className="text-xs font-semibold text-gray-400 ml-1.5">
+              week{weekStreak !== 1 ? 's' : ''} streak
+            </span>
+          </div>
+        </div>
+
+        {/* Month labels */}
+        <div className="flex mb-1" style={{ paddingLeft: 20 }}>
+          {heatmapData.months.map((m, i) => (
+            <span
+              key={i}
+              className="text-[9px] text-gray-600"
+              style={{
+                position: 'relative',
+                left: m.weekIdx * 15,
+                marginRight: i < heatmapData.months.length - 1
+                  ? (heatmapData.months[i + 1].weekIdx - m.weekIdx) * 15 - 20
+                  : 0,
+              }}
+            >
+              {m.label}
+            </span>
+          ))}
+        </div>
+
+        {/* Heatmap grid */}
+        <div className="flex gap-0.5">
+          {/* Day labels */}
+          <div className="flex flex-col gap-0.5 mr-1" style={{ width: 14 }}>
+            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
+              <div
+                key={i}
+                className="heatmap-cell flex items-center justify-center text-[8px] text-gray-600"
+              >
+                {i % 2 === 0 ? d : ''}
+              </div>
+            ))}
+          </div>
+
+          {/* Weeks */}
+          {heatmapData.weeks.map((week, wi) => (
+            <div key={wi} className="flex flex-col gap-0.5">
+              {week.map((day, di) => (
+                <div
+                  key={di}
+                  className="heatmap-cell"
+                  style={{
+                    background: day.isFuture
+                      ? '#0d1117'
+                      : day.hasWorkout
+                        ? '#E8A838'
+                        : '#1e2733',
+                    opacity: day.isFuture ? 0.3 : 1,
+                  }}
+                  title={day.isFuture ? '' : `${day.dateStr}${day.hasWorkout ? ' ✓' : ''}`}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
 
       {!hasData && (

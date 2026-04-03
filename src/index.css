@@ -39,6 +39,14 @@ input[type="number"] {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* ── Heatmap Calendar ── */
+.heatmap-cell {
+  width: 13px;
+  height: 13px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
 /* ── Rest Timer Overlay ── */
 .rest-timer-overlay {
   position: fixed;
