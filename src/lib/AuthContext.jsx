@@ -15,22 +15,47 @@ export function AuthProvider({ children }) {
       })
     }
 
-    // Listen for auth state changes (handles implicit flow token in hash)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user ?? null)
-        setLoading(false)
-        if (event === 'SIGNED_IN' && window.location.hash) {
-          window.history.replaceState(null, '', window.location.pathname)
-        }
-      },
-    )
+    async function init() {
+      // If URL has hash with access_token, manually extract and set session
+      const hash = window.location.hash
+      if (hash && hash.includes('access_token')) {
+        const params = new URLSearchParams(hash.substring(1))
+        const accessToken = params.get('access_token')
+        const refreshToken = params.get('refresh_token')
 
-    // Check existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+        if (accessToken) {
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken || '',
+          })
+          if (data?.session) {
+            setUser(data.session.user)
+          }
+          if (error) {
+            console.error('[Auth] setSession error:', error)
+          }
+          // Clean URL
+          window.history.replaceState(null, '', window.location.pathname)
+          setLoading(false)
+          return
+        }
+      }
+
+      // No hash — check existing session
+      const { data: { session } } = await supabase.auth.getSession()
       setUser(session?.user ?? null)
       setLoading(false)
-    })
+    }
+
+    init()
+
+    // Listen for future auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user ?? null)
+        setLoading(false)
+      },
+    )
 
     return () => subscription.unsubscribe()
   }, [])

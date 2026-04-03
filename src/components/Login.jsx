@@ -1,13 +1,21 @@
+import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
 export default function Login() {
+  const [error, setError] = useState(null)
+
   async function signInWithGoogle() {
-    await supabase.auth.signInWithOAuth({
+    setError(null)
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: window.location.origin,
+        queryParams: {
+          prompt: 'select_account',
+        },
       },
     })
+    if (error) setError(error.message)
   }
 
   return (
@@ -32,6 +40,14 @@ export default function Login() {
         </svg>
         Sign in with Google
       </button>
+
+      {error && (
+        <p className="mt-4 text-sm text-red-400">{error}</p>
+      )}
+
+      <p className="mt-6 text-xs text-gray-600 text-center max-w-xs">
+        If sign-in doesn't work, try disabling browser extensions or use an incognito window.
+      </p>
     </div>
   )
 }
