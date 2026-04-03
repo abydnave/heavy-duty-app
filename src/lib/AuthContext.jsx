@@ -8,29 +8,54 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Handle PKCE code exchange on redirect
-    const params = new URLSearchParams(window.location.search)
-    if (params.get('code')) {
-      supabase.auth.exchangeCodeForSession(params.get('code')).then(({ data, error }) => {
-        if (error) console.error('Code exchange error:', error)
-        if (data?.session) {
-          setUser(data.session.user)
-          window.history.replaceState(null, '', window.location.pathname)
-        }
-        setLoading(false)
-      })
-    } else {
-      // No code in URL — check for existing session
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        setUser(session?.user ?? null)
-        setLoading(false)
+    // Unregister stale service workers on first load
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(regs => {
+        regs.forEach(r => r.unregister())
       })
     }
 
+    // Handle PKCE code exchange on redirect
+    const params = new URLSearchParams(window.location.search)
+    const code = params.get('code')
+
+    if (code) {
+      console.log('[Auth] PKCE code found, exchanging...')
+      supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
+        if (error) {
+          console.error('[Auth] Code exchange error:', error)
+        }
+        if (data?.session) {
+          console.log('[Auth] Session established!')
+          setUser(data.session.user)
+        }
+        window.history.replaceState(null, '', window.location.pathname)
+        setLoading(false)
+      })
+      return
+    }
+
+    // Handle implicit flow hash fragment
+    if (window.location.hash?.includes('access_token')) {
+      console.log('[Auth] Hash token found, letting Supabase handle...')
+    }
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('[Auth] Existing session:', session ? 'yes' : 'no')
+      setUser(session?.user ?? null)
+      setLoading(false)
+    })
+
     // Listen for future auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
+        console.log('[Auth] State change:', event)
         setUser(session?.user ?? null)
+        if (event === 'SIGNED_IN') {
+          setLoading(false)
+          window.history.replaceState(null, '', window.location.pathname)
+        }
       },
     )
 
