@@ -28,7 +28,7 @@ export default function LogWorkout() {
     const d = programme[idx]
     const map = {}
     for (const ex of d.exercises) {
-      map[ex.id] = [{ weight: '', reps: '', completed: false }]
+      map[ex.id] = Array.from({ length: 3 }, () => ({ weight: '', reps: '', completed: false }))
     }
     return map
   }
