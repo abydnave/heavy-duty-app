@@ -6,6 +6,8 @@ const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
     detectSessionInUrl: true,
-    flowType: 'pkce',
+    flowType: 'implicit',
+    storage: window.localStorage,
+    storageKey: 'hd-auth',
   },
 })

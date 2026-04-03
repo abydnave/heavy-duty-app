@@ -8,56 +8,29 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Unregister stale service workers on first load
+    // Unregister stale service workers
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(regs => {
         regs.forEach(r => r.unregister())
       })
     }
 
-    // Handle PKCE code exchange on redirect
-    const params = new URLSearchParams(window.location.search)
-    const code = params.get('code')
-
-    if (code) {
-      console.log('[Auth] PKCE code found, exchanging...')
-      supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
-        if (error) {
-          console.error('[Auth] Code exchange error:', error)
-        }
-        if (data?.session) {
-          console.log('[Auth] Session established!')
-          setUser(data.session.user)
-        }
-        window.history.replaceState(null, '', window.location.pathname)
-        setLoading(false)
-      })
-      return
-    }
-
-    // Handle implicit flow hash fragment
-    if (window.location.hash?.includes('access_token')) {
-      console.log('[Auth] Hash token found, letting Supabase handle...')
-    }
-
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('[Auth] Existing session:', session ? 'yes' : 'no')
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
-
-    // Listen for future auth changes
+    // Listen for auth state changes (handles implicit flow token in hash)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('[Auth] State change:', event)
         setUser(session?.user ?? null)
-        if (event === 'SIGNED_IN') {
-          setLoading(false)
+        setLoading(false)
+        if (event === 'SIGNED_IN' && window.location.hash) {
           window.history.replaceState(null, '', window.location.pathname)
         }
       },
     )
+
+    // Check existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null)
+      setLoading(false)
+    })
 
     return () => subscription.unsubscribe()
   }, [])
