@@ -55,32 +55,23 @@ export default function LogWorkout() {
 
   function toggleComplete(exId, setIdx) {
     const wasCompleted = exerciseSets[exId]?.[setIdx]?.completed
-    setExerciseSets(prev => {
-      const updated = {
-        ...prev,
-        [exId]: prev[exId].map((s, i) => i === setIdx ? { ...s, completed: !s.completed } : s),
-      }
+    setExerciseSets(prev => ({
+      ...prev,
+      [exId]: prev[exId].map((s, i) => i === setIdx ? { ...s, completed: !s.completed } : s),
+    }))
 
-      // If checking (not unchecking), maybe start rest timer
-      if (!wasCompleted) {
-        const ex = day.exercises.find(e => e.id === exId)
+    // If checking (not unchecking), maybe start rest timer
+    if (!wasCompleted) {
+      const ex = day.exercises.find(e => e.id === exId)
+      // Skip timer if this exercise has restAfter: false (superset A → go straight to B)
+      if (ex?.restAfter === false) return
 
-        // Skip timer if this exercise has restAfter: false (superset A → go straight to B)
-        if (ex?.restAfter === false) return updated
-
-        // Only trigger timer after the LAST set of this exercise is completed
-        const allSetsNowComplete = updated[exId].every(s => s.completed)
-        if (!allSetsNowComplete) return updated
-
-        // Find next exercise name for display
-        const exIdx = day.exercises.findIndex(e => e.id === exId)
-        const nextEx = day.exercises[exIdx + 1]
-        setTimerExName(nextEx?.name || '')
-        setTimerOpen(true)
-      }
-
-      return updated
-    })
+      // Find next exercise name for display
+      const exIdx = day.exercises.findIndex(e => e.id === exId)
+      const nextEx = day.exercises[exIdx + 1]
+      setTimerExName(nextEx?.name || '')
+      setTimerOpen(true)
+    }
   }
 
   function addSet(exId) {
