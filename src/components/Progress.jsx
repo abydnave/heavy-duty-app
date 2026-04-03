@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   LineChart, Line, BarChart, Bar,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -42,8 +42,19 @@ function LiftChart({ title, data }) {
 }
 
 export default function Progress({ onRefresh }) {
-  const workouts = getWorkouts()
-  const checkins = getCheckins()
+  const [workouts, setWorkouts] = useState([])
+  const [checkins, setCheckins] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function load() {
+      const [w, c] = await Promise.all([getWorkouts(), getCheckins()])
+      setWorkouts(w)
+      setCheckins(c)
+      setLoading(false)
+    }
+    load()
+  }, [])
 
   // Build per-exercise lift history (best set weight per session)
   const liftData = useMemo(() => {
@@ -54,7 +65,7 @@ export default function Progress({ onRefresh }) {
         const best = Math.max(...ex.sets.map(s => s.weight || 0))
         if (!best) continue
         if (!map[ex.exerciseId]) map[ex.exerciseId] = []
-        map[ex.exerciseId].push({ date: fmt(w.date), weight: best })
+        map[ex.exerciseId].push({ date: fmt(w.created_at), weight: best })
       }
     }
     return map
@@ -62,17 +73,31 @@ export default function Progress({ onRefresh }) {
 
   // Bodyweight trend
   const bwData = useMemo(
-    () => checkins.filter(c => c.bodyweight).map(c => ({ date: fmt(c.date), bw: c.bodyweight })),
+    () => checkins.filter(c => c.bodyweight).map(c => ({ date: fmt(c.created_at), bw: c.bodyweight })),
     [checkins],
   )
 
   // Steps bar
   const stepsData = useMemo(
-    () => checkins.filter(c => c.steps).map(c => ({ date: fmt(c.date), steps: c.steps })),
+    () => checkins.filter(c => c.steps).map(c => ({ date: fmt(c.created_at), steps: c.steps })),
     [checkins],
   )
 
   const hasData = Object.keys(liftData).length > 0 || bwData.length > 0 || stepsData.length > 0
+
+  async function handleDelete(id) {
+    await deleteWorkout(id)
+    setWorkouts(prev => prev.filter(w => w.id !== id))
+    onRefresh?.()
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-sm text-gray-500">Loading...</div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-3">
@@ -127,15 +152,15 @@ export default function Progress({ onRefresh }) {
         <>
           <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider pt-2">Session History</h3>
           {[...workouts].reverse().map(w => {
-            const dayLabel = programme.find(d => d.id === w.dayId)?.label || w.dayId
+            const dayLabel = programme.find(d => d.id === w.day_id)?.label || w.day_id
             return (
               <div key={w.id} className="rounded-xl p-3" style={{ background: '#151a25' }}>
                 <div className="flex justify-between items-center mb-2">
                   <p className="text-sm font-bold text-white">{dayLabel}</p>
                   <div className="flex items-center gap-3">
-                    <span className="text-[10px] text-gray-500">{fmt(w.date)}</span>
+                    <span className="text-[10px] text-gray-500">{fmt(w.created_at)}</span>
                     <button
-                      onClick={() => { deleteWorkout(w.id); onRefresh?.() }}
+                      onClick={() => handleDelete(w.id)}
                       className="text-[10px] text-red-500 hover:text-red-400 font-semibold"
                     >
                       Delete

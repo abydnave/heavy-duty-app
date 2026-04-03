@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { programme } from '../data/programme'
 import { saveWorkout, getPreviousSets } from '../data/storage'
 
@@ -11,17 +11,21 @@ const ssColors = {
 export default function LogWorkout() {
   const [dayIdx, setDayIdx] = useState(0)
   const [exerciseSets, setExerciseSets] = useState(() => initSets(0))
+  const [prevData, setPrevData] = useState({})
   const [saved, setSaved] = useState(false)
 
   const day = programme[dayIdx]
 
-  // Get previous session data for all exercises
-  const prevData = useMemo(() => {
-    const map = {}
-    for (const ex of day.exercises) {
-      map[ex.id] = getPreviousSets(day.id, ex.id)
+  // Load previous session data
+  useEffect(() => {
+    async function loadPrev() {
+      const map = {}
+      for (const ex of day.exercises) {
+        map[ex.id] = await getPreviousSets(day.id, ex.id)
+      }
+      setPrevData(map)
     }
-    return map
+    loadPrev()
   }, [day])
 
   function initSets(idx) {
@@ -67,7 +71,7 @@ export default function LogWorkout() {
     }))
   }
 
-  function submit() {
+  async function submit() {
     const exercises = day.exercises.map(ex => ({
       exerciseId: ex.id,
       sets: (exerciseSets[ex.id] || []).map(s => ({
@@ -76,7 +80,7 @@ export default function LogWorkout() {
         completed: s.completed,
       })),
     }))
-    saveWorkout({ dayId: day.id, exercises })
+    await saveWorkout({ dayId: day.id, exercises })
     setSaved(true)
     setTimeout(() => {
       setSaved(false)

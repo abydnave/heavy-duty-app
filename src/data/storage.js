@@ -1,69 +1,59 @@
-const WORKOUTS_KEY = 'hd_workouts'
-const CHECKINS_KEY = 'hd_checkins'
-
-function read(key) {
-  try { return JSON.parse(localStorage.getItem(key)) || [] }
-  catch { return [] }
-}
-function write(key, data) {
-  localStorage.setItem(key, JSON.stringify(data))
-}
+import { supabase } from '../lib/supabase'
 
 // ── Workouts ──
 
-export function getWorkouts() {
-  return read(WORKOUTS_KEY).map(normalizeWorkout)
+export async function getWorkouts() {
+  const { data } = await supabase
+    .from('workouts')
+    .select('*')
+    .order('created_at', { ascending: true })
+  return data || []
 }
 
-/** Normalize old flat format to new per-exercise multi-set format */
-function normalizeWorkout(w) {
-  if (w.exercises) return w // already new format
-  // Old format: sets: [{ exerciseId, weight, reps, effort }]
-  const byEx = {}
-  for (const s of (w.sets || [])) {
-    if (!byEx[s.exerciseId]) byEx[s.exerciseId] = []
-    byEx[s.exerciseId].push({
-      weight: s.weight || 0,
-      reps: s.reps || 0,
-      completed: true,
-    })
-  }
-  return {
-    ...w,
-    exercises: Object.entries(byEx).map(([exerciseId, sets]) => ({ exerciseId, sets })),
-  }
+export async function saveWorkout(entry) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  await supabase.from('workouts').insert({
+    user_id: user.id,
+    day_id: entry.dayId,
+    exercises: entry.exercises,
+  })
 }
 
-export function saveWorkout(entry) {
-  // entry: { dayId, exercises: [{ exerciseId, sets: [{ weight, reps, completed }] }] }
-  const all = read(WORKOUTS_KEY)
-  all.push({ ...entry, id: crypto.randomUUID(), date: new Date().toISOString() })
-  write(WORKOUTS_KEY, all)
-}
-
-export function deleteWorkout(id) {
-  write(WORKOUTS_KEY, read(WORKOUTS_KEY).filter(w => w.id !== id))
+export async function deleteWorkout(id) {
+  await supabase.from('workouts').delete().eq('id', id)
 }
 
 /** Get previous session's sets for a given day + exercise */
-export function getPreviousSets(dayId, exerciseId) {
-  const workouts = getWorkouts()
-    .filter(w => w.dayId === dayId)
-    .sort((a, b) => new Date(b.date) - new Date(a.date))
+export async function getPreviousSets(dayId, exerciseId) {
+  const { data } = await supabase
+    .from('workouts')
+    .select('exercises')
+    .eq('day_id', dayId)
+    .order('created_at', { ascending: false })
+    .limit(1)
 
-  for (const w of workouts) {
-    const ex = w.exercises?.find(e => e.exerciseId === exerciseId)
-    if (ex?.sets?.length) return ex.sets
-  }
-  return []
+  if (!data?.length) return []
+  const ex = data[0].exercises?.find(e => e.exerciseId === exerciseId)
+  return ex?.sets || []
 }
 
 // ── Check-ins ──
 
-export function getCheckins() { return read(CHECKINS_KEY) }
+export async function getCheckins() {
+  const { data } = await supabase
+    .from('checkins')
+    .select('*')
+    .order('created_at', { ascending: true })
+  return data || []
+}
 
-export function saveCheckin(entry) {
-  const all = read(CHECKINS_KEY)
-  all.push({ ...entry, id: crypto.randomUUID(), date: new Date().toISOString() })
-  write(CHECKINS_KEY, all)
+export async function saveCheckin(entry) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  await supabase.from('checkins').insert({
+    user_id: user.id,
+    bodyweight: entry.bodyweight || null,
+    steps: entry.steps || null,
+  })
 }

@@ -1,4 +1,7 @@
 import { useState, useCallback } from 'react'
+import { AuthProvider, useAuth } from './lib/AuthContext'
+import { supabase } from './lib/supabase'
+import Login from './components/Login'
 import LogWorkout from './components/LogWorkout'
 import Checkin from './components/Checkin'
 import Progress from './components/Progress'
@@ -31,10 +34,13 @@ const tabs = [
   { id: 'progress', label: 'Progress', Icon: ChartIcon },
 ]
 
-export default function App() {
+function AppShell() {
+  const { user } = useAuth()
   const [tab, setTab] = useState('log')
   const [tick, setTick] = useState(0)
   const refresh = useCallback(() => setTick(t => t + 1), [])
+
+  if (!user) return <Login />
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: '#0d1117' }}>
@@ -43,11 +49,17 @@ export default function App() {
         <h1 className="text-xl font-extrabold tracking-tight text-white">
           Heavy Duty
         </h1>
-        {tab === 'log' && (
+        <div className="flex items-center gap-3">
           <span className="text-xs text-gray-500">
             {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
           </span>
-        )}
+          <button
+            onClick={() => supabase.auth.signOut()}
+            className="text-[10px] text-gray-600 hover:text-gray-400 font-semibold"
+          >
+            Sign out
+          </button>
+        </div>
       </header>
 
       {/* Content */}
@@ -73,5 +85,13 @@ export default function App() {
         ))}
       </nav>
     </div>
+  )
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppShell />
+    </AuthProvider>
   )
 }
