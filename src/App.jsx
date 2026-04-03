@@ -3,10 +3,32 @@ import LogWorkout from './components/LogWorkout'
 import Checkin from './components/Checkin'
 import Progress from './components/Progress'
 
+/* ── SVG Icons ── */
+const DumbbellIcon = ({ active }) => (
+  <svg viewBox="0 0 24 24" className={`w-6 h-6 ${active ? 'text-amber-500' : 'text-gray-500'}`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6.5 6.5h11M6.5 17.5h11M3 10V7a1 1 0 0 1 1-1h1.5a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-3M21 10V7a1 1 0 0 0-1-1h-1.5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1H20a1 1 0 0 0 1-1v-3M9.5 6v12M14.5 6v12"/>
+  </svg>
+)
+
+const ClipboardIcon = ({ active }) => (
+  <svg viewBox="0 0 24 24" className={`w-6 h-6 ${active ? 'text-amber-500' : 'text-gray-500'}`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+    <path d="M12 11h4M12 16h4M8 11h.01M8 16h.01"/>
+  </svg>
+)
+
+const ChartIcon = ({ active }) => (
+  <svg viewBox="0 0 24 24" className={`w-6 h-6 ${active ? 'text-amber-500' : 'text-gray-500'}`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 3v18h18"/>
+    <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/>
+  </svg>
+)
+
 const tabs = [
-  { id: 'log',      label: 'Log Workout', icon: '🏋️' },
-  { id: 'checkin',  label: 'Check-in',    icon: '📋' },
-  { id: 'progress', label: 'Progress',    icon: '📈' },
+  { id: 'log',      label: 'Workout', Icon: DumbbellIcon },
+  { id: 'checkin',  label: 'Check-in', Icon: ClipboardIcon },
+  { id: 'progress', label: 'Progress', Icon: ChartIcon },
 ]
 
 export default function App() {
@@ -15,12 +37,17 @@ export default function App() {
   const refresh = useCallback(() => setTick(t => t + 1), [])
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{ background: '#0d1117' }}>
       {/* Header */}
-      <header className="px-4 pt-4 pb-2">
+      <header className="px-4 pt-4 pb-2 flex items-center justify-between">
         <h1 className="text-xl font-extrabold tracking-tight text-white">
-          Heavy Duty Tracker
+          Heavy Duty
         </h1>
+        {tab === 'log' && (
+          <span className="text-xs text-gray-500">
+            {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+          </span>
+        )}
       </header>
 
       {/* Content */}
@@ -31,16 +58,17 @@ export default function App() {
       </main>
 
       {/* Bottom nav */}
-      <nav className="fixed bottom-0 inset-x-0 bg-slate-800 border-t border-slate-700 flex safe-bottom">
-        {tabs.map(t => (
+      <nav className="fixed bottom-0 inset-x-0 flex safe-bottom border-t" style={{ background: '#0d1117', borderColor: '#1e2733' }}>
+        {tabs.map(({ id, label, Icon }) => (
           <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`flex-1 flex flex-col items-center py-2 text-xs transition
-              ${t.id === tab ? 'text-indigo-400' : 'text-slate-500 hover:text-slate-300'}`}
+            key={id}
+            onClick={() => setTab(id)}
+            className="flex-1 flex flex-col items-center py-2 transition"
           >
-            <span className="text-lg">{t.icon}</span>
-            {t.label}
+            <Icon active={id === tab} />
+            <span className={`text-[10px] mt-0.5 font-medium ${id === tab ? 'text-amber-500' : 'text-gray-500'}`}>
+              {label}
+            </span>
           </button>
         ))}
       </nav>

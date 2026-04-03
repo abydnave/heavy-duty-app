@@ -20,34 +20,48 @@ export default function Checkin() {
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <h2 className="text-lg font-bold text-slate-200">Daily Check-in</h2>
+      <h2 className="text-lg font-bold text-white">Daily Check-in</h2>
 
-      <div className="bg-slate-800 rounded-lg p-4 space-y-3">
-        <label className="block text-sm text-slate-400">
-          Bodyweight (lbs)
-          <input
-            type="number" inputMode="decimal" step="0.1"
-            placeholder="e.g. 185"
-            className="mt-1 w-full bg-slate-700 rounded px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            value={bodyweight} onChange={e => setBodyweight(e.target.value)}
-          />
+      <div className="rounded-xl p-4 space-y-4" style={{ background: '#151a25' }}>
+        <label className="block">
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Bodyweight</span>
+          <div className="relative mt-1.5">
+            <input
+              type="number"
+              inputMode="decimal"
+              step="0.1"
+              placeholder="0.0"
+              className="w-full rounded-xl px-4 py-3 text-white text-sm placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-amber-500"
+              style={{ background: '#1e2433' }}
+              value={bodyweight}
+              onChange={e => setBodyweight(e.target.value)}
+            />
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-500">lbs</span>
+          </div>
         </label>
-        <label className="block text-sm text-slate-400">
-          Steps
-          <input
-            type="number" inputMode="numeric"
-            placeholder="e.g. 8000"
-            className="mt-1 w-full bg-slate-700 rounded px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            value={steps} onChange={e => setSteps(e.target.value)}
-          />
+        <label className="block">
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Steps</span>
+          <div className="relative mt-1.5">
+            <input
+              type="number"
+              inputMode="numeric"
+              placeholder="0"
+              className="w-full rounded-xl px-4 py-3 text-white text-sm placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-amber-500"
+              style={{ background: '#1e2433' }}
+              value={steps}
+              onChange={e => setSteps(e.target.value)}
+            />
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-500">steps</span>
+          </div>
         </label>
       </div>
 
       <button
         type="submit"
-        className="w-full py-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 font-bold text-white transition"
+        className="w-full py-3.5 rounded-xl font-bold text-white text-sm transition"
+        style={{ background: saved ? '#4CD964' : '#E8A838' }}
       >
-        {saved ? 'Saved!' : 'Log Check-in'}
+        {saved ? '✓ Saved!' : 'Log Check-in'}
       </button>
     </form>
   )

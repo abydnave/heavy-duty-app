@@ -1,1 +1,40 @@
 @import "tailwindcss";
+
+/* ── Stronger-style custom utilities ── */
+
+/* Hide number input spinners */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Completed set row */
+.set-completed {
+  background: rgba(76, 217, 100, 0.08);
+}
+
+/* Green checkmark circle */
+.check-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #3a3a3a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+.check-btn.checked {
+  background: #4CD964;
+  border-color: #4CD964;
+}
+
+/* Safe area for bottom nav */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}

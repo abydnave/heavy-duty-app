@@ -13,8 +13,8 @@ export default defineConfig({
         name: 'Heavy Duty Tracker',
         short_name: 'HeavyDuty',
         description: 'Mike Mentzer Heavy Duty workout tracker',
-        theme_color: '#0f172a',
-        background_color: '#0f172a',
+        theme_color: '#0d1117',
+        background_color: '#0d1117',
         display: 'standalone',
         start_url: '/',
         icons: [
