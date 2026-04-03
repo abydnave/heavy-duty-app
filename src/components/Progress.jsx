@@ -85,21 +85,7 @@ export default function Progress({ onRefresh }) {
 
   const hasData = Object.keys(liftData).length > 0 || bwData.length > 0 || stepsData.length > 0
 
-  async function handleDelete(id) {
-    await deleteWorkout(id)
-    setWorkouts(prev => prev.filter(w => w.id !== id))
-    onRefresh?.()
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-sm text-gray-500">Loading...</div>
-      </div>
-    )
-  }
-
-  // Compute next workout day
+  // Compute next workout day (must be before any early returns — hooks rules)
   const nextWorkout = useMemo(() => {
     if (!workouts.length) return { label: 'Day 1 — Chest + Back', dateStr: 'Start anytime!', dayId: 'day1' }
 
@@ -133,6 +119,20 @@ export default function Progress({ onRefresh }) {
 
     return { label: nextDay?.label || nextDayId, dateStr, dayId: nextDayId, isToday: diffDays <= 0 }
   }, [workouts])
+
+  async function handleDelete(id) {
+    await deleteWorkout(id)
+    setWorkouts(prev => prev.filter(w => w.id !== id))
+    onRefresh?.()
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-sm text-gray-500">Loading...</div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-3">
