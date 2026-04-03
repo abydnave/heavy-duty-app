@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { programme } from '../data/programme'
 import { saveWorkout, getPreviousSets } from '../data/storage'
+import RestTimer from './RestTimer'
 
 const ssColors = {
   A: { border: '#E8A838', bg: 'rgba(232,168,56,0.12)', text: '#E8A838' },
@@ -13,6 +14,8 @@ export default function LogWorkout() {
   const [exerciseSets, setExerciseSets] = useState(() => initSets(0))
   const [prevData, setPrevData] = useState({})
   const [saved, setSaved] = useState(false)
+  const [timerOpen, setTimerOpen] = useState(false)
+  const [timerExName, setTimerExName] = useState('')
 
   const day = programme[dayIdx]
 
@@ -51,10 +54,24 @@ export default function LogWorkout() {
   }
 
   function toggleComplete(exId, setIdx) {
+    const wasCompleted = exerciseSets[exId]?.[setIdx]?.completed
     setExerciseSets(prev => ({
       ...prev,
       [exId]: prev[exId].map((s, i) => i === setIdx ? { ...s, completed: !s.completed } : s),
     }))
+
+    // If checking (not unchecking), maybe start rest timer
+    if (!wasCompleted) {
+      const ex = day.exercises.find(e => e.id === exId)
+      // Skip timer if this exercise has restAfter: false (superset A → go straight to B)
+      if (ex?.restAfter === false) return
+
+      // Find next exercise name for display
+      const exIdx = day.exercises.findIndex(e => e.id === exId)
+      const nextEx = day.exercises[exIdx + 1]
+      setTimerExName(nextEx?.name || '')
+      setTimerOpen(true)
+    }
   }
 
   function addSet(exId) {
@@ -229,6 +246,13 @@ export default function LogWorkout() {
       </button>
 
       <div className="h-4" />
+
+      {/* Rest Timer Overlay */}
+      <RestTimer
+        isOpen={timerOpen}
+        onClose={() => setTimerOpen(false)}
+        exerciseName={timerExName}
+      />
     </div>
   )
 }

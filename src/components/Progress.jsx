@@ -99,9 +99,53 @@ export default function Progress({ onRefresh }) {
     )
   }
 
+  // Compute next workout day
+  const nextWorkout = useMemo(() => {
+    if (!workouts.length) return { label: 'Day 1 — Chest + Back', dateStr: 'Start anytime!', dayId: 'day1' }
+
+    const sorted = [...workouts].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    const last = sorted[0]
+    const lastDate = new Date(last.created_at)
+
+    // Figure out which day is next in rotation
+    const dayOrder = ['day1', 'day2', 'day3']
+    const lastDayIdx = dayOrder.indexOf(last.day_id)
+    const nextDayIdx = (lastDayIdx + 1) % 3
+    const nextDayId = dayOrder[nextDayIdx]
+    const nextDay = programme.find(d => d.id === nextDayId)
+
+    // Rest days: 3 after legs (day2), 2 otherwise
+    const restDays = last.day_id === 'day2' ? 3 : 2
+    const nextDate = new Date(lastDate)
+    nextDate.setDate(nextDate.getDate() + restDays)
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const target = new Date(nextDate)
+    target.setHours(0, 0, 0, 0)
+
+    const diffDays = Math.round((target - today) / (1000 * 60 * 60 * 24))
+
+    let dateStr
+    if (diffDays <= 0) dateStr = 'Today!'
+    else if (diffDays === 1) dateStr = 'Tomorrow'
+    else dateStr = nextDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+
+    return { label: nextDay?.label || nextDayId, dateStr, dayId: nextDayId, isToday: diffDays <= 0 }
+  }, [workouts])
+
   return (
     <div className="space-y-3">
       <h2 className="text-lg font-bold text-white">Progress</h2>
+
+      {/* Next Workout Card */}
+      <div className="rounded-xl p-4" style={{ background: '#151a25', borderLeft: '4px solid #E8A838' }}>
+        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Next Workout</p>
+        <p className="text-sm font-bold text-white">{nextWorkout.label}</p>
+        <p className={`text-xs mt-1 font-semibold ${nextWorkout.isToday ? 'text-green-400' : 'text-amber-500'}`}>
+          {nextWorkout.isToday ? '🔥 ' : ''}{nextWorkout.dateStr}
+        </p>
+      </div>
 
       {!hasData && (
         <div className="rounded-xl p-8 text-center" style={{ background: '#151a25' }}>

@@ -38,3 +38,68 @@ input[type="number"] {
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+
+/* ── Rest Timer Overlay ── */
+.rest-timer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: fadeIn 0.2s ease;
+}
+
+.rest-timer-card {
+  text-align: center;
+  padding: 2rem 2.5rem;
+  border-radius: 1.5rem;
+  background: #151a25;
+  border: 1px solid #2a3040;
+  min-width: 280px;
+  animation: scaleIn 0.2s ease;
+}
+
+.rest-timer-ring {
+  transition: stroke-dashoffset 1s linear;
+}
+
+.rest-timer-btn {
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: #1e2433;
+  transition: all 0.15s ease;
+}
+.rest-timer-btn:hover {
+  background: #2a3040;
+  color: #fff;
+}
+.rest-timer-btn:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.rest-timer-btn-main {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  transition: all 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes scaleIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
